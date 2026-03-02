@@ -7,6 +7,17 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
+ds_store
+*.DS_Store
+*.vspscc
+*.vssscc
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.pidb
+*.svclog
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
