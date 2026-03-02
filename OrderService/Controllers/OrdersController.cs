@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Models;
+using System.Net;
 
 namespace OrderService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController(OrderDbContext dbContext) : ControllerBase
+public class OrdersController(OrderDbContext dbContext, IHttpClientFactory httpClientFactory) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Order>>> GetAll()
@@ -26,6 +27,35 @@ public class OrdersController(OrderDbContext dbContext) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Order>> Create(Order order)
     {
+        var customerClient = httpClientFactory.CreateClient("CustomerService");
+        using var customerResponse = await customerClient.GetAsync($"api/customers/{order.CustomerId}");
+
+        if (customerResponse.StatusCode == HttpStatusCode.NotFound)
+        {
+            return BadRequest($"Customer {order.CustomerId} does not exist.");
+        }
+
+        if (!customerResponse.IsSuccessStatusCode)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, "Customer service unavailable.");
+        }
+
+        var productClient = httpClientFactory.CreateClient("ProductService");
+        foreach (var item in order.Items)
+        {
+            using var productResponse = await productClient.GetAsync($"api/products/{item.ProductId}");
+
+            if (productResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                return BadRequest($"Product {item.ProductId} does not exist.");
+            }
+
+            if (!productResponse.IsSuccessStatusCode)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Product service unavailable.");
+            }
+        }
+
         dbContext.Orders.Add(order);
         await dbContext.SaveChangesAsync();
 
@@ -38,6 +68,35 @@ public class OrdersController(OrderDbContext dbContext) : ControllerBase
         if (id != order.Id)
         {
             return BadRequest();
+        }
+
+        var customerClient = httpClientFactory.CreateClient("CustomerService");
+        using var customerResponse = await customerClient.GetAsync($"api/customers/{order.CustomerId}");
+
+        if (customerResponse.StatusCode == HttpStatusCode.NotFound)
+        {
+            return BadRequest($"Customer {order.CustomerId} does not exist.");
+        }
+
+        if (!customerResponse.IsSuccessStatusCode)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, "Customer service unavailable.");
+        }
+
+        var productClient = httpClientFactory.CreateClient("ProductService");
+        foreach (var item in order.Items)
+        {
+            using var productResponse = await productClient.GetAsync($"api/products/{item.ProductId}");
+
+            if (productResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                return BadRequest($"Product {item.ProductId} does not exist.");
+            }
+
+            if (!productResponse.IsSuccessStatusCode)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Product service unavailable.");
+            }
         }
 
         var existing = await dbContext.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);

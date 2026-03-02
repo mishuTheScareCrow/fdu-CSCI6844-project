@@ -11,6 +11,16 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
         ?? "Data Source=order.db";
     options.UseSqlite(connectionString);
 });
+builder.Services.AddHttpClient("CustomerService", client =>
+{
+    var baseUrl = builder.Configuration["ServiceUrls:CustomerService"] ?? "http://localhost:5119/";
+    client.BaseAddress = new Uri(baseUrl);
+});
+builder.Services.AddHttpClient("ProductService", client =>
+{
+    var baseUrl = builder.Configuration["ServiceUrls:ProductService"] ?? "http://localhost:5287/";
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 var app = builder.Build();
 
