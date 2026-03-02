@@ -1,5 +1,7 @@
 namespace OrderService.Models;
 
+using Microsoft.EntityFrameworkCore;
+
 public class Order
 {
     public int Id { get; set; }
@@ -9,6 +11,7 @@ public class Order
     public List<OrderItem> Items { get; set; } = [];
 }
 
+[Owned]
 public class OrderItem
 {
     public int ProductId { get; set; }
