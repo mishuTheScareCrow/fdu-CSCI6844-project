@@ -55,6 +55,16 @@ CodeCoverage/
 # MSBuild Binary and Structured Log
 *.binlog
 
+# SQLite database files
+**/db/*.db
+**/db/*.db-shm
+**/db/*.db-wal
+# Root-level db files (from local dotnet run)
+customer.db
+product.db
+order.db
+payment.db
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
