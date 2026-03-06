@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Validates and handles payments linked to orders.
+Handles payments linked to orders.
 
 ## Model
 
