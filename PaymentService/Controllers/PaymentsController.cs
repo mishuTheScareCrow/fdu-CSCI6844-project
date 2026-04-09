@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
+using PaymentService.DTOs;
 using PaymentService.Models;
 
 namespace PaymentService.Controllers;
@@ -10,43 +11,48 @@ namespace PaymentService.Controllers;
 public class PaymentsController(PaymentDbContext dbContext) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Payment>>> GetAll()
+    public async Task<ActionResult<IEnumerable<PaymentDto>>> GetAll()
     {
         var payments = await dbContext.Payments.ToListAsync();
-        return Ok(payments);
+        return Ok(payments.Select(ToDto));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Payment>> GetById(int id)
+    public async Task<ActionResult<PaymentDto>> GetById(int id)
     {
         var payment = await dbContext.Payments.FindAsync(id);
-        return payment is null ? NotFound() : Ok(payment);
+        return payment is null ? NotFound() : Ok(ToDto(payment));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Payment>> Create(Payment payment)
+    public async Task<ActionResult<PaymentDto>> Create(CreatePaymentDto request)
     {
+        var payment = new Payment
+        {
+            OrderId = request.OrderId,
+            Amount = request.Amount,
+            Status = request.Status
+        };
+
         dbContext.Payments.Add(payment);
         await dbContext.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = payment.Id }, payment);
+        return CreatedAtAction(nameof(GetById), new { id = payment.Id }, ToDto(payment));
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, Payment payment)
+    public async Task<IActionResult> Update(int id, UpdatePaymentDto request)
     {
-        if (id != payment.Id)
-        {
-            return BadRequest();
-        }
-
-        var existing = await dbContext.Payments.AnyAsync(p => p.Id == id);
-        if (!existing)
+        var payment = await dbContext.Payments.FindAsync(id);
+        if (payment is null)
         {
             return NotFound();
         }
 
-        dbContext.Entry(payment).State = EntityState.Modified;
+        payment.OrderId = request.OrderId;
+        payment.Amount = request.Amount;
+        payment.Status = request.Status;
+
         await dbContext.SaveChangesAsync();
 
         return NoContent();
@@ -66,4 +72,12 @@ public class PaymentsController(PaymentDbContext dbContext) : ControllerBase
 
         return NoContent();
     }
+
+    private static PaymentDto ToDto(Payment payment) => new()
+    {
+        Id = payment.Id,
+        OrderId = payment.OrderId,
+        Amount = payment.Amount,
+        Status = payment.Status
+    };
 }

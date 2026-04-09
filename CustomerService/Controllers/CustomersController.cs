@@ -1,4 +1,5 @@
 using CustomerService.Data;
+using CustomerService.DTOs;
 using CustomerService.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,43 +11,46 @@ namespace CustomerService.Controllers;
 public class CustomersController(CustomerDbContext dbContext) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Customer>>> GetAll()
+    public async Task<ActionResult<IEnumerable<CustomerDto>>> GetAll()
     {
         var customers = await dbContext.Customers.ToListAsync();
-        return Ok(customers);
+        return Ok(customers.Select(ToDto));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Customer>> GetById(int id)
+    public async Task<ActionResult<CustomerDto>> GetById(int id)
     {
         var customer = await dbContext.Customers.FindAsync(id);
-        return customer is null ? NotFound() : Ok(customer);
+        return customer is null ? NotFound() : Ok(ToDto(customer));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Customer>> Create(Customer customer)
+    public async Task<ActionResult<CustomerDto>> Create(CreateCustomerDto request)
     {
+        var customer = new Customer
+        {
+            Name = request.Name,
+            Email = request.Email
+        };
+
         dbContext.Customers.Add(customer);
         await dbContext.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
+        return CreatedAtAction(nameof(GetById), new { id = customer.Id }, ToDto(customer));
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, Customer customer)
+    public async Task<IActionResult> Update(int id, UpdateCustomerDto request)
     {
-        if (id != customer.Id)
-        {
-            return BadRequest();
-        }
-
-        var existing = await dbContext.Customers.AnyAsync(c => c.Id == id);
-        if (!existing)
+        var customer = await dbContext.Customers.FindAsync(id);
+        if (customer is null)
         {
             return NotFound();
         }
 
-        dbContext.Entry(customer).State = EntityState.Modified;
+        customer.Name = request.Name;
+        customer.Email = request.Email;
+
         await dbContext.SaveChangesAsync();
 
         return NoContent();
@@ -66,4 +70,11 @@ public class CustomersController(CustomerDbContext dbContext) : ControllerBase
 
         return NoContent();
     }
+
+    private static CustomerDto ToDto(Customer customer) => new()
+    {
+        Id = customer.Id,
+        Name = customer.Name,
+        Email = customer.Email
+    };
 }

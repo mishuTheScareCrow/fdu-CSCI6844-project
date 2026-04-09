@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Data;
+using ProductService.DTOs;
 using ProductService.Models;
 
 namespace ProductService.Controllers;
@@ -10,43 +11,48 @@ namespace ProductService.Controllers;
 public class ProductsController(ProductDbContext dbContext) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Product>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
     {
         var products = await dbContext.Products.ToListAsync();
-        return Ok(products);
+        return Ok(products.Select(ToDto));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Product>> GetById(int id)
+    public async Task<ActionResult<ProductDto>> GetById(int id)
     {
         var product = await dbContext.Products.FindAsync(id);
-        return product is null ? NotFound() : Ok(product);
+        return product is null ? NotFound() : Ok(ToDto(product));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Product>> Create(Product product)
+    public async Task<ActionResult<ProductDto>> Create(CreateProductDto request)
     {
+        var product = new Product
+        {
+            Name = request.Name,
+            Price = request.Price,
+            Stock = request.Stock
+        };
+
         dbContext.Products.Add(product);
         await dbContext.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        return CreatedAtAction(nameof(GetById), new { id = product.Id }, ToDto(product));
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, Product product)
+    public async Task<IActionResult> Update(int id, UpdateProductDto request)
     {
-        if (id != product.Id)
-        {
-            return BadRequest();
-        }
-
-        var existing = await dbContext.Products.AnyAsync(p => p.Id == id);
-        if (!existing)
+        var product = await dbContext.Products.FindAsync(id);
+        if (product is null)
         {
             return NotFound();
         }
 
-        dbContext.Entry(product).State = EntityState.Modified;
+        product.Name = request.Name;
+        product.Price = request.Price;
+        product.Stock = request.Stock;
+
         await dbContext.SaveChangesAsync();
 
         return NoContent();
@@ -66,4 +72,12 @@ public class ProductsController(ProductDbContext dbContext) : ControllerBase
 
         return NoContent();
     }
+
+    private static ProductDto ToDto(Product product) => new()
+    {
+        Id = product.Id,
+        Name = product.Name,
+        Price = product.Price,
+        Stock = product.Stock
+    };
 }

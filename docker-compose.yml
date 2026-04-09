@@ -1,4 +1,11 @@
 services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   customerservice:
     container_name: customerservice
     build:
@@ -20,8 +27,17 @@ services:
       - "5002:8080"
     environment:
       ConnectionStrings__DefaultConnection: "Data Source=/app/db/product.db"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      RabbitMq__VirtualHost: /
+      RabbitMq__ExchangeName: orders.exchange
+      RabbitMq__OrderCreatedQueueName: product.order-created.queue
     volumes:
       - ./ProductService/db:/app/db
+    depends_on:
+      - rabbitmq
 
   orderservice:
     container_name: orderservice
@@ -34,9 +50,16 @@ services:
       ConnectionStrings__DefaultConnection: "Data Source=/app/db/order.db"
       ServiceUrls__CustomerService: http://customerservice:8080/
       ServiceUrls__ProductService: http://productservice:8080/
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      RabbitMq__VirtualHost: /
+      RabbitMq__ExchangeName: orders.exchange
     volumes:
       - ./OrderService/db:/app/db
     depends_on:
+      - rabbitmq
       - customerservice
       - productservice
 

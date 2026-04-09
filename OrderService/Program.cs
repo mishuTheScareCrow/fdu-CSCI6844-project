@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
+using OrderService.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,8 @@ builder.Services.AddHttpClient("ProductService", client =>
     var baseUrl = builder.Configuration["ServiceUrls:ProductService"] ?? "http://localhost:5287/";
     client.BaseAddress = new Uri(baseUrl);
 });
+builder.Services.AddSingleton(builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>() ?? new RabbitMqOptions());
+builder.Services.AddSingleton<IOrderEventPublisher, RabbitMqOrderEventPublisher>();
 
 var app = builder.Build();
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProductService.Data;
+using ProductService.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,8 @@ builder.Services.AddDbContext<ProductDbContext>(options =>
         ?? "Data Source=product.db";
     options.UseSqlite(connectionString);
 });
+builder.Services.AddSingleton(builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>() ?? new RabbitMqOptions());
+builder.Services.AddHostedService<OrderCreatedConsumer>();
 
 var app = builder.Build();
 
