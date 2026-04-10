@@ -1,19 +1,24 @@
 # fdu-CSCI6844-project
 
-Containerized eCommerce microservices backend using ASP.NET Core + EF Core + SQLite.
+Containerized eCommerce microservices backend using ASP.NET Core, EF Core, SQLite, RabbitMQ, and an API Gateway (YARP).
 
-## Services
+## Architecture
 
-- CustomerService (`localhost:5001`)
-- ProductService (`localhost:5002`)
-- OrderService (`localhost:5003`)
-- PaymentService (`localhost:5004`)
+- API Gateway is the single public entry point: `http://localhost:5000`
+- Internal services (not exposed to host):
+	- `customerservice`
+	- `productservice`
+	- `orderservice`
+	- `paymentservice`
+- Messaging broker (internal):
+	- `rabbitmq` on Docker network port `5672`
 
-All services run in Docker and expose Swagger UI.
+Client traffic should go through the gateway only.
 
 ## Project Documentation
 
 - Root overview: this file
+- ApiGateway: [ApiGateway](ApiGateway)
 - CustomerService: [CustomerService/README.md](CustomerService/README.md)
 - ProductService: [ProductService/README.md](ProductService/README.md)
 - OrderService: [OrderService/README.md](OrderService/README.md)
@@ -34,40 +39,52 @@ Stop services:
 docker compose down
 ```
 
-## Swagger URLs
+## Gateway Swagger
 
-- Customer: http://localhost:5001/swagger/index.html
-- Product: http://localhost:5002/swagger/index.html
-- Order: http://localhost:5003/swagger/index.html
-- Payment: http://localhost:5004/swagger/index.html
+- Gateway Swagger UI: http://localhost:5000/swagger/index.html
+
+## Gateway Routes
+
+- Customers: `http://localhost:5000/api/customers/...`
+- Products: `http://localhost:5000/api/products/...`
+- Orders: `http://localhost:5000/api/orders/...`
+- Payments: `http://localhost:5000/api/payments/...`
+- Aggregated endpoint: `GET http://localhost:5000/api/orders/{id}/details`
 
 ## Quick Verification Checklist
 
 1. Create Customer
 2. Create Product
-3. Create Order referencing both
+3. Create Order referencing both (through gateway)
 4. Create invalid Order with bad IDs and confirm `400 BadRequest`
+5. Verify async messaging: product stock is reduced automatically after order creation
 
 ### Example Commands
 
 ```bash
 # 1) create customer
-curl -s -X POST http://localhost:5001/api/customers \
+curl -s -X POST http://localhost:5000/api/customers \
 	-H "Content-Type: application/json" \
 	-d '{"name":"Alice","email":"alice@example.com"}'
 
 # 2) create product
-curl -s -X POST http://localhost:5002/api/products \
+curl -s -X POST http://localhost:5000/api/products \
 	-H "Content-Type: application/json" \
 	-d '{"name":"Laptop","price":999.99,"stock":10}'
 
 # 3) create valid order (expect HTTP:201)
-curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5003/api/orders \
+curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5000/api/orders \
 	-H "Content-Type: application/json" \
 	-d '{"customerId":1,"total":999.99,"status":"Created","items":[{"productId":1,"quantity":1}]}'
 
 # 4) invalid order (expect HTTP:400)
-curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5003/api/orders \
+curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5000/api/orders \
 	-H "Content-Type: application/json" \
 	-d '{"customerId":999,"total":25.00,"status":"Created","items":[{"productId":999,"quantity":1}]}'
+
+# 5) verify stock auto-reduced by ProductService consumer
+curl -s http://localhost:5000/api/products/1
+
+# 6) verify aggregated endpoint
+curl -s http://localhost:5000/api/orders/1/details
 ```
