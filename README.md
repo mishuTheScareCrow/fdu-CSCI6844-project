@@ -6,12 +6,12 @@ Containerized eCommerce microservices backend using ASP.NET Core, EF Core, SQLit
 
 - API Gateway is the single public entry point: `http://localhost:5000`
 - Internal services (not exposed to host):
-	- `customerservice`
-	- `productservice`
-	- `orderservice`
-	- `paymentservice`
+  - `customerservice`
+  - `productservice`
+  - `orderservice`
+  - `paymentservice`
 - Messaging broker (internal):
-	- `rabbitmq` on Docker network port `5672`
+  - `rabbitmq` on Docker network port `5672`
 
 Client traffic should go through the gateway only.
 
