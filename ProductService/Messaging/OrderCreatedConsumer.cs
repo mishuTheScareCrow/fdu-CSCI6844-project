@@ -19,32 +19,50 @@ public sealed class OrderCreatedConsumer(
     private IConnection? connection;
     private IModel? channel;
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var factory = new ConnectionFactory
+        var connected = false;
+        while (!stoppingToken.IsCancellationRequested && !connected)
         {
-            HostName = options.HostName,
-            Port = options.Port,
-            UserName = options.UserName,
-            Password = options.Password,
-            VirtualHost = options.VirtualHost,
-            DispatchConsumersAsync = true
-        };
+            try
+            {
+                var factory = new ConnectionFactory
+                {
+                    HostName = options.HostName,
+                    Port = options.Port,
+                    UserName = options.UserName,
+                    Password = options.Password,
+                    VirtualHost = options.VirtualHost,
+                    DispatchConsumersAsync = true
+                };
 
-        connection = factory.CreateConnection();
-        channel = connection.CreateModel();
+                connection = factory.CreateConnection();
+                channel = connection.CreateModel();
 
-        channel.ExchangeDeclare(options.ExchangeName, ExchangeType.Fanout, durable: true, autoDelete: false);
-        channel.QueueDeclare(options.OrderCreatedQueueName, durable: true, exclusive: false, autoDelete: false);
-        channel.QueueBind(options.OrderCreatedQueueName, options.ExchangeName, string.Empty);
+                channel.ExchangeDeclare(options.ExchangeName, ExchangeType.Fanout, durable: true, autoDelete: false);
+                channel.QueueDeclare(options.OrderCreatedQueueName, durable: true, exclusive: false, autoDelete: false);
+                channel.QueueBind(options.OrderCreatedQueueName, options.ExchangeName, string.Empty);
 
-        var consumer = new AsyncEventingBasicConsumer(channel);
-        consumer.Received += OnOrderCreatedAsync;
+                var consumer = new AsyncEventingBasicConsumer(channel);
+                consumer.Received += OnOrderCreatedAsync;
 
-        channel.BasicConsume(options.OrderCreatedQueueName, autoAck: false, consumer: consumer);
-        logger.LogInformation("OrderCreatedConsumer started. Queue: {Queue}", options.OrderCreatedQueueName);
+                channel.BasicConsume(options.OrderCreatedQueueName, autoAck: false, consumer: consumer);
+                logger.LogInformation("OrderCreatedConsumer started. Queue: {Queue}", options.OrderCreatedQueueName);
+                connected = true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "RabbitMQ not ready yet. Retrying in 5 seconds...");
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+        }
 
-        return Task.Delay(Timeout.Infinite, stoppingToken);
+        if (stoppingToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
     private async Task OnOrderCreatedAsync(object sender, BasicDeliverEventArgs eventArgs)

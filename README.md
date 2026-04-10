@@ -4,7 +4,7 @@ Containerized eCommerce microservices backend using ASP.NET Core, EF Core, SQLit
 
 ## Architecture
 
-- API Gateway is the single public entry point: `http://localhost:5000`
+- API Gateway is the single public entry point: `http://localhost:5050`
 - Internal services (not exposed to host):
   - `customerservice`
   - `productservice`
@@ -13,11 +13,15 @@ Containerized eCommerce microservices backend using ASP.NET Core, EF Core, SQLit
 - Messaging broker (internal):
   - `rabbitmq` on Docker network port `5672`
 
+RabbitMQ Management UI is available at `http://localhost:15672`.
+Default login: `guest` / `guest`.
+
 Client traffic should go through the gateway only.
 
 ## Project Documentation
 
 - Root overview: this file
+- Final report: [docs/Final-Project-Report.md](docs/Final-Project-Report.md)
 - ApiGateway: [ApiGateway](ApiGateway)
 - CustomerService: [CustomerService/README.md](CustomerService/README.md)
 - ProductService: [ProductService/README.md](ProductService/README.md)
@@ -41,15 +45,15 @@ docker compose down
 
 ## Gateway Swagger
 
-- Gateway Swagger UI: http://localhost:5000/swagger/index.html
+- Gateway Swagger UI: http://localhost:5050/swagger/index.html
 
 ## Gateway Routes
 
-- Customers: `http://localhost:5000/api/customers/...`
-- Products: `http://localhost:5000/api/products/...`
-- Orders: `http://localhost:5000/api/orders/...`
-- Payments: `http://localhost:5000/api/payments/...`
-- Aggregated endpoint: `GET http://localhost:5000/api/orders/{id}/details`
+- Customers: `http://localhost:5050/api/customers/...`
+- Products: `http://localhost:5050/api/products/...`
+- Orders: `http://localhost:5050/api/orders/...`
+- Payments: `http://localhost:5050/api/payments/...`
+- Aggregated endpoint: `GET http://localhost:5050/api/orders/{id}/details`
 
 ## Quick Verification Checklist
 
@@ -63,28 +67,28 @@ docker compose down
 
 ```bash
 # 1) create customer
-curl -s -X POST http://localhost:5000/api/customers \
+curl -s -X POST http://localhost:5050/api/customers \
 	-H "Content-Type: application/json" \
 	-d '{"name":"Alice","email":"alice@example.com"}'
 
 # 2) create product
-curl -s -X POST http://localhost:5000/api/products \
+curl -s -X POST http://localhost:5050/api/products \
 	-H "Content-Type: application/json" \
 	-d '{"name":"Laptop","price":999.99,"stock":10}'
 
 # 3) create valid order (expect HTTP:201)
-curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5000/api/orders \
+curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5050/api/orders \
 	-H "Content-Type: application/json" \
 	-d '{"customerId":1,"total":999.99,"status":"Created","items":[{"productId":1,"quantity":1}]}'
 
 # 4) invalid order (expect HTTP:400)
-curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5000/api/orders \
+curl -s -w "\nHTTP:%{http_code}\n" -X POST http://localhost:5050/api/orders \
 	-H "Content-Type: application/json" \
 	-d '{"customerId":999,"total":25.00,"status":"Created","items":[{"productId":999,"quantity":1}]}'
 
 # 5) verify stock auto-reduced by ProductService consumer
-curl -s http://localhost:5000/api/products/1
+curl -s http://localhost:5050/api/products/1
 
 # 6) verify aggregated endpoint
-curl -s http://localhost:5000/api/orders/1/details
+curl -s http://localhost:5050/api/orders/1/details
 ```

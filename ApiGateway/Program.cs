@@ -1,4 +1,5 @@
 using System.Net;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +23,17 @@ builder.Services.AddReverseProxy()
 var app = builder.Build();
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.ConfigObject.Urls =
+    [
+        new UrlDescriptor { Name = "API Gateway", Url = "/swagger/v1/swagger.json" },
+        new UrlDescriptor { Name = "Customer Service", Url = "/docs/customers/swagger/v1/swagger.json" },
+        new UrlDescriptor { Name = "Product Service", Url = "/docs/products/swagger/v1/swagger.json" },
+        new UrlDescriptor { Name = "Order Service", Url = "/docs/orders/swagger/v1/swagger.json" },
+        new UrlDescriptor { Name = "Payment Service", Url = "/docs/payments/swagger/v1/swagger.json" }
+    ];
+});
 
 app.MapGet("/api/orders/{id:int}/details", async (int id, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
