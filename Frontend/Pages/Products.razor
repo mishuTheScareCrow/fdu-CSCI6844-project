@@ -1,0 +1,39 @@
+@page "/products"
+@using Frontend.Models
+@using Frontend.Services
+@inject ApiService Api
+
+<div class="container">
+    <h3>Products Catalog</h3>
+
+    @if (products == null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (ProductDto product in products)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@product.Name</h5>
+                            <p class="card-text mb-1"><strong>Price:</strong> $@product.Price.ToString("0.00")</p>
+                            <p class="card-text"><strong>Stock:</strong> @product.Stock</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ProductDto>? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await Api.GetProductsAsync();
+    }
+}
