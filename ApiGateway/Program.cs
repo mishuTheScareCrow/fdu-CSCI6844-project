@@ -12,7 +12,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(FrontendCorsPolicy, policy =>
     {
         policy
-            .WithOrigins("http://localhost:5138", "https://localhost:7249")
+            .WithOrigins("http://localhost:5138", "https://localhost:7249", "http://localhost:8081")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -49,7 +49,7 @@ app.UseSwaggerUI(options =>
     ];
 });
 
-app.MapGet("/api/orders/{id:int}/details", async (int id, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
+var getOrderDetails = async (int id, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     var orderClient = httpClientFactory.CreateClient("OrderService");
     using var orderResponse = await orderClient.GetAsync($"api/orders/{id}", cancellationToken);
@@ -109,7 +109,10 @@ app.MapGet("/api/orders/{id:int}/details", async (int id, IHttpClientFactory htt
         Customer = customer,
         Products = products
     });
-});
+};
+
+app.MapGet("/api/orders/{id:int}/details", getOrderDetails);
+app.MapGet("/orders/{id:int}/details", getOrderDetails);
 
 app.MapReverseProxy();
 

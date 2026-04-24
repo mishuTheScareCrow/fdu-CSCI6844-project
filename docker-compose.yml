@@ -1,4 +1,14 @@
 services:
+  frontend:
+    container_name: frontend
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      - apigateway
+
   apigateway:
     container_name: apigateway
     build:
@@ -15,9 +25,8 @@ services:
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
-    ports:
-      - "15672:15672"
     expose:
+      - "15672"
       - "5672"
 
   customerservice:
