@@ -1,0 +1,83 @@
+@page "/customers"
+@inject ApiService Api
+
+<PageTitle>Customers</PageTitle>
+
+<div class="container py-3">
+    <h3 class="mb-3">Customers</h3>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert @messageClass" role="alert">@message</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Add Customer</h5>
+            <form @onsubmit="CreateCustomerAsync">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input class="form-control" placeholder="Name" @bind="newCustomer.Name" required />
+                    </div>
+                    <div class="col-md-5">
+                        <input class="form-control" type="email" placeholder="Email" @bind="newCustomer.Email"
+                               required />
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-primary" type="submit">Add</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (customers is null)
+    {
+        <p>Loading customers...</p>
+    }
+    else if (customers.Count == 0)
+    {
+        <p>No customers found.</p>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var customer in customers)
+            {
+                <div class="col-md-4">
+                    <CustomerCard Customer="customer" />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<CustomerDto>? customers;
+    private CreateCustomerDto newCustomer = new();
+    private string? message;
+    private string messageClass = "alert-info";
+
+    protected override async Task OnInitializedAsync()
+    {
+        customers = await Api.GetCustomersAsync();
+    }
+
+    private async Task CreateCustomerAsync()
+    {
+        message = null;
+
+        var created = await Api.CreateCustomerAsync(newCustomer);
+        if (created is null)
+        {
+            message = "Failed to create customer. Check gateway and service availability.";
+            messageClass = "alert-danger";
+            return;
+        }
+
+        newCustomer = new CreateCustomerDto();
+        customers = await Api.GetCustomersAsync();
+        message = "Customer created.";
+        messageClass = "alert-success";
+    }
+}

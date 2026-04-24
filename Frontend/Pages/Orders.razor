@@ -1,0 +1,148 @@
+@page "/orders"
+@inject ApiService Api
+
+<PageTitle>Orders</PageTitle>
+
+<div class="container py-3">
+    <h3 class="mb-3">Orders</h3>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert @messageClass" role="alert">@message</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Create Order</h5>
+            <form @onsubmit="CreateOrderAsync">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label">Customer</label>
+                        <select class="form-select" @bind="selectedCustomerId" required>
+                            @foreach (var customer in customers)
+                            {
+                                <option value="@customer.Id">@customer.Name (@customer.Id)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Product</label>
+                        <select class="form-select" @bind="selectedProductId" required>
+                            @foreach (var product in products)
+                            {
+                                <option value="@product.Id">@product.Name (@product.Id)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Quantity</label>
+                        <input class="form-control" type="number" min="1" @bind="quantity" required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <input class="form-control" @bind="status" required />
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-primary" type="submit" disabled="@(!CanCreateOrder)">Create</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (orders is null)
+    {
+        <p>Loading orders...</p>
+    }
+    else if (orders.Count == 0)
+    {
+        <p>No orders found.</p>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var order in orders)
+            {
+                <div class="col-md-6">
+                    <OrderCard Order="order" />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<OrderDto>? orders;
+    private List<CustomerDto> customers = [];
+    private List<ProductDto> products = [];
+
+    private int selectedCustomerId;
+    private int selectedProductId;
+    private int quantity = 1;
+    private string status = "Pending";
+
+    private string? message;
+    private string messageClass = "alert-info";
+
+    private bool CanCreateOrder => customers.Count > 0 && products.Count > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        customers = await Api.GetCustomersAsync();
+        products = await Api.GetProductsAsync();
+        orders = await Api.GetOrdersAsync();
+
+        if (customers.Count > 0)
+        {
+            selectedCustomerId = customers[0].Id;
+        }
+
+        if (products.Count > 0)
+        {
+            selectedProductId = products[0].Id;
+        }
+    }
+
+    private async Task CreateOrderAsync()
+    {
+        message = null;
+
+        var selectedProduct = products.FirstOrDefault(p => p.Id == selectedProductId);
+        if (selectedProduct is null)
+        {
+            message = "Please select a valid product.";
+            messageClass = "alert-danger";
+            return;
+        }
+
+        var request = new CreateOrderDto
+        {
+            CustomerId = selectedCustomerId,
+            Total = selectedProduct.Price * quantity,
+            Status = status,
+            Items =
+            [
+                new CreateOrderItemDto
+                {
+                    ProductId = selectedProductId,
+                    Quantity = quantity
+                }
+            ]
+        };
+
+        var created = await Api.CreateOrderAsync(request);
+        if (created is null)
+        {
+            message = "Failed to create order. Ensure selected customer/product exist and services are running.";
+            messageClass = "alert-danger";
+            return;
+        }
+
+        quantity = 1;
+        status = "Pending";
+        orders = await Api.GetOrdersAsync();
+        message = "Order created.";
+        messageClass = "alert-success";
+    }
+}

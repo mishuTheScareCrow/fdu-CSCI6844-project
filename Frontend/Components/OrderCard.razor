@@ -1,0 +1,23 @@
+<div class="card h-100 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">Order #@Order.Id</h5>
+        <p class="card-text mb-1"><strong>Customer:</strong> @Order.CustomerId</p>
+        <p class="card-text mb-1"><strong>Status:</strong> @Order.Status</p>
+        <p class="card-text mb-2"><strong>Total:</strong> $@Order.Total.ToString("0.00")</p>
+
+        @if (Order.Items.Count > 0)
+        {
+            <ul class="mb-0">
+                @foreach (var item in Order.Items)
+                {
+                    <li>Product @item.ProductId x @item.Quantity</li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public OrderDto Order { get; set; } = new();
+}

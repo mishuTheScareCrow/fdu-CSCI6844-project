@@ -1,0 +1,12 @@
+<div class="card h-100 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">@Product.Name</h5>
+        <p class="card-text mb-1"><strong>Price:</strong> $@Product.Price.ToString("0.00")</p>
+        <p class="card-text mb-0"><strong>Stock:</strong> @Product.Stock</p>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ProductDto Product { get; set; } = new();
+}

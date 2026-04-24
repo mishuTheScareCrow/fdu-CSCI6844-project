@@ -1,0 +1,11 @@
+<div class="card h-100 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">@Customer.Name</h5>
+        <p class="card-text mb-0"><strong>Email:</strong> @Customer.Email</p>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public CustomerDto Customer { get; set; } = new();
+}
