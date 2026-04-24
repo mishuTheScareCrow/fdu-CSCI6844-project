@@ -99,7 +99,6 @@ Frontend integration pattern:
 ## Project Documentation
 
 - Root overview: this file
-- Final report: [docs/Final-Project-Report.md](docs/Final-Project-Report.md)
 - ApiGateway: [ApiGateway](ApiGateway)
 - CustomerService: [CustomerService/README.md](CustomerService/README.md)
 - ProductService: [ProductService/README.md](ProductService/README.md)
