@@ -31,54 +31,54 @@ Frontend must never call microservices directly. All browser API calls must go t
 ### Mermaid Architecture Diagram
 
 ```mermaid
-flowchart LR
-		User[User Browser]
+flowchart TD
+    User[User Browser]
 
-		subgraph FE[Frontend Layer]
-				Blazor[Blazor WebAssembly Frontend]
-		end
+    subgraph FE[Frontend Layer]
+        Blazor[Blazor WebAssembly Frontend]
+    end
 
-		subgraph EDGE[Gateway Layer]
-				Gateway[API Gateway :5050]
-		end
+    subgraph EDGE[Gateway Layer]
+        Gateway[API Gateway :5050]
+    end
 
-		subgraph BE[Microservices Layer]
-				ProductSvc[Product Service]
-				CustomerSvc[Customer Service]
-				OrderSvc[Order Service]
-				PaymentSvc[Payment Service]
-		end
+    subgraph BE[Microservices Layer]
+        ProductSvc[Product Service]
+        CustomerSvc[Customer Service]
+        OrderSvc[Order Service]
+        PaymentSvc[Payment Service]
+    end
 
-		subgraph MQ[Messaging]
-				Rabbit[(RabbitMQ)]
-		end
+    subgraph MQ[Messaging]
+        Rabbit[(RabbitMQ)]
+    end
 
-		subgraph DATA[Service Databases]
-				ProductDB[(Product DB)]
-				CustomerDB[(Customer DB)]
-				OrderDB[(Order DB)]
-				PaymentDB[(Payment DB)]
-		end
+    subgraph DATA[Service Databases]
+        ProductDB[(Product DB)]
+        CustomerDB[(Customer DB)]
+        OrderDB[(Order DB)]
+        PaymentDB[(Payment DB)]
+    end
 
-		User -->|HTTP| Blazor
-		Blazor -->|Gateway only| Gateway
+    User -->|HTTP| Blazor
+    Blazor -->|"All API calls only via Gateway"| Gateway
 
-		Gateway -->|GET/POST /products| ProductSvc
-		Gateway -->|GET/POST /customers| CustomerSvc
-		Gateway -->|GET/POST /orders| OrderSvc
-		Gateway -->|/api/payments| PaymentSvc
+    Gateway -->|"/products"| ProductSvc
+    Gateway -->|"/customers"| CustomerSvc
+    Gateway -->|"/orders"| OrderSvc
+    Gateway -->|"/api/payments"| PaymentSvc
 
-		Gateway -->|Aggregate /orders/{id}/details| OrderSvc
-		Gateway -->|Aggregate lookup| CustomerSvc
-		Gateway -->|Aggregate lookup| ProductSvc
+    Gateway -->|"Aggregate endpoint /orders/{id}/details"| OrderSvc
+    Gateway -->|"Aggregate lookup"| CustomerSvc
+    Gateway -->|"Aggregate lookup"| ProductSvc
 
-		ProductSvc --> ProductDB
-		CustomerSvc --> CustomerDB
-		OrderSvc --> OrderDB
-		PaymentSvc --> PaymentDB
+    ProductSvc --> ProductDB
+    CustomerSvc --> CustomerDB
+    OrderSvc --> OrderDB
+    PaymentSvc --> PaymentDB
 
-		OrderSvc -->|OrderCreated event| Rabbit
-		Rabbit -->|Consume OrderCreated| ProductSvc
+    OrderSvc -->|Publish OrderCreated| Rabbit
+    Rabbit -->|Consume OrderCreated| ProductSvc
 ```
 
 ## Frontend Overview
